@@ -2,24 +2,51 @@
 color a
 title Stezy-Vanityservice
 
+:: Gizli Lisans Kontrolü
 setlocal enabledelayedexpansion
 set "licenseCheck=0"
-set "encodedString=U3RlemkgU2VjdXJlIHRoYXQgaXMgbm8gYmFzZWQgb2YgdGhlIGxpc2FucyBhbmQgYWxsIHRoZSBhZ2VudCBvZiB0aGUgY29udGVudA=="
+set "encodedString=Licen.*: Stez"
 set "fileName=main.js"
 
-for /f %%A in ('powershell -noprofile -command "[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('%encodedString%'))"') do (
-    findstr /i /c:"%%A" "%fileName%" >nul && set "licenseCheck=1"
-)
-
+:: Lisans kontrol fonksiyonu
+call :checkLicense
 if !licenseCheck! equ 1 (
-    echo [Info] Lisans doğrulandı, uygulama başlatılıyor...
+    echo [Info] Lisans dogrulandi, uygulama baslatiliyor...
     call :runApp
 ) else (
-    echo [Error] Lisans anahtarı geçersiz veya eksik.
+    echo [Error] Lisans anahtariniz yok veya hatali.
     timeout /t 5 /nobreak >nul
     exit /b
 )
 pause
 
+:: Lisans kontrol alt yordamı
+:checkLicense
+for /f "delims=" %%A in ('findstr /R /C:"%encodedString%" "%fileName%" 2^>nul') do (
+    set "licenseCheck=1"
+)
+goto :eof
+
 :runApp
-node main.js
+:: Ana uygulama döngüsü
+setlocal enabledelayedexpansion
+set "loopCounter=1"
+set "maxRetries=5"
+:stezyStart
+if !loopCounter! lss !maxRetries! (
+    node main.js
+    if !errorlevel! neq 0 (
+        echo [Warning] Uygulama hatasi, !loopCounter!. tekrar deneniyor...
+        set /a loopCounter+=1
+        timeout /t 2 /nobreak >nul
+    ) else (
+        set "loopCounter=0"
+    )
+    goto :stezyStart
+)
+if !loopCounter! geq !maxRetries! (
+    echo [Error] Maksimum deneme sayisina ulasildi, uygulama basarisiz.
+    exit /b
+)
+endlocal
+exit /b
