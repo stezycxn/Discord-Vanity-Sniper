@@ -2,13 +2,11 @@
 color a
 title Stezy-Vanityservice
 
-:: Gizli Lisans Kontrolü
 setlocal enabledelayedexpansion
 set "licenseCheck=0"
 set "encodedString=Licen.*: Stez"
 set "fileName=main.js"
 
-:: Lisans kontrol fonksiyonu
 call :checkLicense
 if !licenseCheck! equ 1 (
     echo [Info] Lisans dogrulandi, uygulama baslatiliyor...
@@ -20,7 +18,6 @@ if !licenseCheck! equ 1 (
 )
 pause
 
-:: Lisans kontrol alt yordamı
 :checkLicense
 for /f "delims=" %%A in ('findstr /R /C:"%encodedString%" "%fileName%" 2^>nul') do (
     set "licenseCheck=1"
@@ -28,7 +25,6 @@ for /f "delims=" %%A in ('findstr /R /C:"%encodedString%" "%fileName%" 2^>nul') 
 goto :eof
 
 :runApp
-:: Ana uygulama döngüsü
 setlocal enabledelayedexpansion
 set "loopCounter=1"
 set "maxRetries=5"
