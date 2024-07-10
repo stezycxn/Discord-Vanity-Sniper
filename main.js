@@ -1,9 +1,11 @@
 "use strict";
- 
+
+// License : Stezy
+
 const tls = require("tls");
 const WebSocket = require("ws");
 const extract_json_from_string_1 = require("extract-json-from-string");
- 
+
 const config = {
     discordHost: "canary.discord.com",
     discordToken: "Token",
@@ -13,18 +15,15 @@ const config = {
     browser: "Safari",
     device: "MacBook"
 };
- 
- 
- 
+
 let vanity;
 const guilds = {};
- 
+
 let tlsSocket;
- 
- 
+
 function initializeTLSSocket(port) {
     tlsSocket = tls.connect({ host: config.discordHost, port });
- 
+
     tlsSocket.on("data", async (data) => {
         const ext = (0, extract_json_from_string_1)(data.toString());
         const find = ext.find((e) => e.code) || ext.find((e) => e.message);
@@ -47,28 +46,28 @@ function initializeTLSSocket(port) {
             tlsSocket.write(request);
         }
     });
- 
+
     tlsSocket.on("error", (error) => {
         console.log(`tls error`, error);
         process.exit();
     });
- 
+
     tlsSocket.on("end", () => {
         console.log("tls connection closed");
         process.exit();
     });
- 
+
     tlsSocket.on("secureConnect", () => {
         const websocket = new WebSocket(config.gatewayUrl);
- 
+
         websocket.onclose = (event) => {
             console.log(`ws connection closed ${event.reason} ${event.code}`);
             process.exit();
         };
- 
+
         websocket.onmessage = async (message) => {
             const { d, op, t } = JSON.parse(message.data);
- 
+
             if (t === "GUILD_UPDATE") {
                 const find = guilds[d.guild_id];
                 if (find && find !== d.vanity_url_code) {
@@ -96,7 +95,7 @@ function initializeTLSSocket(port) {
                 });
                 console.log(guilds);
             }
- 
+
             if (op === 10) {
                 websocket.send(JSON.stringify({
                     op: 2,
@@ -115,17 +114,15 @@ function initializeTLSSocket(port) {
                 process.exit();
             }
         };
- 
+
         setInterval(() => {
             tlsSocket.write(["GET / HTTP/1.2", `Host: ${config.discordHost}`, "", ""].join("\r\n"));
         }, 4250);
     });
 }
- 
- 
+
 initializeTLSSocket(8443);
- 
- 
+
 setInterval(() => {
     if (tlsSocket) tlsSocket.end();
     initializeTLSSocket(currentPort === 8443 ? 443 : 8443);
